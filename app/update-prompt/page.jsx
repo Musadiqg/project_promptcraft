@@ -1,46 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Form from "@components/Form";
 
 const UpdatePrompt = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const promptId = searchParams.get("id");
-
   const [post, setPost] = useState({ prompt: "", tag: "" });
   const [submitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const getPromptDetails = async () => {
-      if (promptId) {
-        try {
-          const response = await fetch(`/api/prompt/${promptId}`);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch prompt with id ${promptId}`);
-          }
-          const data = await response.json();
-          if (data.error) {
-            throw new Error(data.error);
-          }
-          setPost({
-            prompt: data.prompt,
-            tag: data.tag,
-          });
-        } catch (error) {
-          console.error("Error fetching prompt details:", error);
-          alert("Failed to load prompt details. Please try again.");
-        }
-      }
-    };
+  const PromptDetails = () => {
+    const searchParams = useSearchParams();
+    const promptId = searchParams.get("id");
 
-    getPromptDetails();
-  }, [promptId]);
+    useEffect(() => {
+      const getPromptDetails = async () => {
+        if (promptId) {
+          try {
+            const response = await fetch(`/api/prompt/${promptId}`);
+            if (!response.ok) {
+              throw new Error(`Failed to fetch prompt with id ${promptId}`);
+            }
+            const data = await response.json();
+            if (data.error) {
+              throw new Error(data.error);
+            }
+            setPost({
+              prompt: data.prompt,
+              tag: data.tag,
+            });
+          } catch (error) {
+            console.error("Error fetching prompt details:", error);
+            alert("Failed to load prompt details. Please try again.");
+          }
+        }
+      };
+
+      getPromptDetails();
+    }, [promptId]);
+
+    return null;
+  };
 
   const updatePrompt = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const searchParams = useSearchParams();
+    const promptId = searchParams.get("id");
 
     if (!promptId) {
       alert("Missing PromptId!");
@@ -74,13 +81,16 @@ const UpdatePrompt = () => {
   };
 
   return (
-    <Form
-      type='Edit'
-      post={post}
-      setPost={setPost}
-      submitting={submitting}
-      handleSubmit={updatePrompt}
-    />
+    <Suspense fallback={<div>Loading...</div>}>
+      <PromptDetails />
+      <Form
+        type='Edit'
+        post={post}
+        setPost={setPost}
+        submitting={submitting}
+        handleSubmit={updatePrompt}
+      />
+    </Suspense>
   );
 };
 
